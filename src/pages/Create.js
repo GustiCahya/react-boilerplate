@@ -9,7 +9,7 @@ import {
   Radio,
   FormLabel,
   FormGroup,
-  Paper
+  Paper,
 } from "@mui/material";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
@@ -29,39 +29,42 @@ export default function Create() {
   // store
   const dispatch = useDispatch();
   // states
-  const [title, setTitle] = React.useState("");
-  const [titleError, setTitleError] = React.useState(false);
-  const [details, setDetails] = React.useState("");
-  const [detailsError, setDetailsError] = React.useState(false);
-  const [category, setCategory] = React.useState("todos");
-  const handleSubmit = React.useCallback(
-    async (e) => {
-      e.preventDefault();
-      setTitleError(false);
-      setDetailsError(false);
-      if (title === "") {
-        setTitleError(true);
+  const initialFormValues = { title: "", details: "", category: "todos" };
+  const [formValues, setFormValues] = React.useState(initialFormValues);
+  const [formErrors, setFormErrors] = React.useState({});
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormValues({ ...formValues, [name]: value });
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errors = validate(formValues);
+    setFormErrors(errors);
+    if (Object.keys(errors).length === 0){
+      const result = await dispatch(addNote(formValues));
+      if(result.status === 201) {
+        history.push("/");
       }
-      if (details === "") {
-        setDetailsError(true);
-      }
-      if (title && details) {
-        const body = {
-          title,
-          details,
-          category,
-        };
-        const result = await dispatch(addNote(body));
-        if(result.status === 201) {
-          history.push("/");
-        }
-      }
-    },
-    [title, details, category, history, dispatch]
-  );
+    }
+  };
+  const validate = (values) => {
+    const errors = {};
+    if (!values.title) {
+      errors.title = "Title is required!";
+    }
+    if (!values.details) {
+      errors.details = "Details is required!";
+    } else if (false) {
+      // another validation
+    }
+    if (!values.category) {
+      errors.category = "Category is required!";
+    }
+    return errors;
+  };
   return (
     <Container>
-      <Paper sx={{p: 2, borderRadius: 2}}>
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Typography
           variant="h6"
           color="textSecondary"
@@ -73,16 +76,20 @@ export default function Create() {
         <form noValidate autoComplete="off" onSubmit={handleSubmit}>
           <TextField
             sx={styles.field}
+            name="title"
             label="Note Title"
             variant="outlined"
             color="secondary"
             fullWidth
             required
-            error={titleError}
-            onChange={(e) => setTitle(e.target.value)}
+            value={formValues.title}
+            error={formErrors.title}
+            helperText={formErrors.title}
+            onChange={handleChange}
           />
           <TextField
             sx={styles.field}
+            name="details"
             label="Details"
             variant="outlined"
             color="secondary"
@@ -90,23 +97,40 @@ export default function Create() {
             multiline
             rows={4}
             required
-            error={detailsError}
-            onChange={(e) => setDetails(e.target.value)}
+            value={formValues.details}
+            error={formErrors.details}
+            helperText={formErrors.details}
+            onChange={handleChange}
           />
           <FormGroup sx={styles.field}>
             <FormLabel>Note Category</FormLabel>
             <RadioGroup
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              name="category"
+              value={formValues.category}
+              error={formErrors.category}
+              helperText={formErrors.category}
+              onChange={handleChange}
             >
-              <FormControlLabel value="money" control={<Radio />} label="Money" />
-              <FormControlLabel value="todos" control={<Radio />} label="Todos" />
+              <FormControlLabel
+                value="money"
+                control={<Radio />}
+                label="Money"
+              />
+              <FormControlLabel
+                value="todos"
+                control={<Radio />}
+                label="Todos"
+              />
               <FormControlLabel
                 value="reminders"
                 control={<Radio />}
                 label="Reminders"
               />
-              <FormControlLabel value="work" control={<Radio />} label="Works" />
+              <FormControlLabel
+                value="work"
+                control={<Radio />}
+                label="Works"
+              />
             </RadioGroup>
           </FormGroup>
           <Button
